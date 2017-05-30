@@ -1,11 +1,20 @@
 package com.banamex.portal.microservice.ccapplicationsms.controller;
 
+import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.banamex.portal.microservice.ccapplications.domain.CustomerDataRequest;
+import com.banamex.portal.microservice.ccapplicationsms.services.ApplicationService;
+import com.banamex.portal.microservice.ccapplicationsms.util.ConstantesSTC;
+import com.banamex.portal.microservice.ccapplicationsms.util.GsonR;
 
 @RestController
 @RequestMapping("applications")
@@ -13,19 +22,34 @@ public class ApplicationController {
 
 	private final Logger log = LoggerFactory.getLogger(ApplicationController.class);
 
+	@Autowired
+	private ApplicationService applicationService;
+	
 	/*
 	 * Devuelve la informacion faltante de cliente para una solicitud utilizando el
 	 * número y fecha de nacimiento del cliente
 	 */
 	@RequestMapping(value = "/customer",method = RequestMethod.POST, produces="application/json")
-	public Object getInfCustumerToRequestCreditCardByNumClientAndBirthday() {
-		log.info("Obteniendo informacion del cliente para realizar solicitud de TDC");
-		
+	public Object getInfCustumerToRequestCreditCardByNumClientAndBirthday(@RequestBody CustomerDataRequest customer) {
 		/*
-		 * numClient
+		 * nClient
 		 * birthDate
 		 */
-		return null;
+		
+		log.info("Obteniendo informacion del cliente para realizar solicitud de TDC");
+		log.debug("Entro a la que era la URL: /getCliente");
+		
+		String nclient= "";
+		String birthDate= "";
+		String resultJson;
+		HashMap<String, Object> result= new HashMap<String, Object>();	
+		
+		nclient = customer.getNoCliente();
+		birthDate = customer.getFechaDeNacimiento();
+		result = applicationService.getSys16Compuesto(nclient,birthDate);
+			 
+		resultJson = GsonR.toJson(result);
+		return resultJson;	
 	}
 	
 	/*
@@ -34,8 +58,23 @@ public class ApplicationController {
 	@RequestMapping(value = "/customer/{folioXSell}",method = RequestMethod.GET, produces="application/json")
 	public Object getInfCustumerToRequestCreditCardByFolioXSell(@PathVariable String folioXSell) {
 		log.info("Obteniendo informacion del cliente para realizar solicitud de TDC");
-
-		return null;
+		log.debug("entro /getClienteNC");
+		
+		HashMap<String,Object> result= new HashMap<String,Object>();
+		
+		String nclient=folioXSell; 
+		 	
+		if(nclient.length()>13){
+			log.debug("Entro a getSys16:getClienteNC");
+		 	result= applicationService.getSys16(nclient);
+		 }else{
+		 	log.debug("No entro a getSys16:getClienteNC");
+		 	result.put("error", ConstantesSTC.ERROR_TAMANIO_FOLIO_MENOR_IGUAL_13);
+		 } 
+			
+		String resultJson = GsonR.toJson(result);
+		 	
+		return resultJson;	
 	}
 	
 	/*
@@ -108,6 +147,7 @@ public class ApplicationController {
 		
 		return null;
 	}
+	
 	
 //	private void generarArratTemporal(Integer [] arrayTemp,Integer [] array,int indice, int tam){
 //		arrayTemp = new Integer[tam];	
